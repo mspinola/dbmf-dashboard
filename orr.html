@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en"><head>
+<meta name="robots" content="noindex, nofollow"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORR Book Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f3f5f6; --surface: #fbfcfc; --ink: #0f1720; --ink-2: #4a5561; --muted: #7b8590;
+  --grid: #e2e6e9; --axis: #c5ccd2; --line: rgba(15, 23, 32, 0.10);
+  --accent: #1d5e8c; --wash: rgba(29, 94, 140, 0.07);
+  --long: #2a78d6; --short: #eb6834; --net: #4a3aa7;
+  --up: #0b7a3a; --down: #b3261e;
+  --chip-open: #0b7a3a; --chip-close: #b3261e; --chip-flip: #8a4bd1; --chip-size: #6b7580;
+  --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d1013; --surface: #151a1e; --ink: #eef2f5; --ink-2: #b6bfc8; --muted: #7f8993;
+    --grid: #252c32; --axis: #39424a; --line: rgba(255,255,255,0.09);
+    --accent: #6fb0e0; --wash: rgba(111,176,224,0.09);
+    --long: #3987e5; --short: #d95926; --net: #9085e9;
+    --up: #3fbf6f; --down: #ef6b62;
+    --chip-open: #3fbf6f; --chip-close: #ef6b62; --chip-flip: #b58cf0; --chip-size: #8f99a3;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d1013; --surface: #151a1e; --ink: #eef2f5; --ink-2: #b6bfc8; --muted: #7f8993;
+  --grid: #252c32; --axis: #39424a; --line: rgba(255,255,255,0.09);
+  --accent: #6fb0e0; --wash: rgba(111,176,224,0.09);
+  --long: #3987e5; --short: #d95926; --net: #9085e9;
+  --up: #3fbf6f; --down: #ef6b62;
+  --chip-open: #3fbf6f; --chip-close: #ef6b62; --chip-flip: #b58cf0; --chip-size: #8f99a3;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--page); }
+body { margin: 0; color: var(--ink); font: 14px/1.5 var(--sans); padding-inline: 20px; padding-block: 28px 56px; }
+@media (max-width: 600px) { body { padding-inline: 16px; } }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.eyebrow { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { margin: 2px 0 0; font-size: 26px; line-height: 1.15; font-weight: 700; letter-spacing: -.01em; }
+h1 .tk { font-family: var(--mono); font-weight: 600; color: var(--accent); }
+.asof { color: var(--ink-2); font-size: 13px; text-align: right; }
+.asof b { color: var(--ink); font-weight: 600; }
+.asof a { color: var(--ink-2); }
+@media (max-width: 600px) { .asof { text-align: left; } }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stat { background: var(--surface); padding: 14px 16px; display: grid; gap: 2px; align-content: start; }
+.stat .label { font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
+.stat .value { font-size: 24px; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.stat .delta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; }
+section.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 16px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 10px; }
+h2 { margin: 0; font-size: 15px; font-weight: 650; }
+.sub { color: var(--muted); font-size: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.legend i.ln { height: 2px; width: 14px; border-radius: 1px; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--sans); fill: var(--muted); font-size: 11px; }
+svg .lbl { fill: var(--ink-2); font-size: 11px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+svg .gridline { stroke: var(--grid); stroke-width: 1; }
+svg .zero { stroke: var(--axis); stroke-width: 1; }
+svg .hit { fill: transparent; cursor: pointer; }
+svg .hit:hover { fill: var(--wash); }
+svg .hit.sel { fill: var(--wash); }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+td { padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+td.m { font-family: var(--mono); font-size: 12.5px; }
+td .n { color: var(--muted); font-size: 12px; margin-left: 8px; }
+@media (max-width: 600px) { td .n { display: none; } td, th { padding-inline: 5px; } }
+.chip { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; border: 1px solid currentColor; display: inline-block; min-width: 74px; text-align: center; }
+.chip.open { color: var(--chip-open); } .chip.close { color: var(--chip-close); }
+.chip.flip { color: var(--chip-flip); } .chip.size { color: var(--chip-size); }
+.side { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.empty { color: var(--muted); font-size: 13px; padding: 10px 0; }
+.note { color: var(--muted); font-size: 12px; margin-top: 10px; max-width: 90ch; }
+.note b { color: var(--ink-2); font-weight: 600; }
+.toggle { font: inherit; font-size: 12px; color: var(--ink-2); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; margin-top: 10px; }
+.toggle:hover { background: var(--wash); }
+.toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.guide { margin-top: 12px; font-size: 13px; color: var(--ink-2); max-width: 76ch; display: grid; gap: 8px; }
+.guide[hidden] { display: none; }
+.guide p { margin: 0; } .guide b { color: var(--ink); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; font-size: 12px; font-family: var(--mono); color: var(--ink-2); background: transparent; border: 0; padding: 3px 10px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--wash); color: var(--ink); font-weight: 600; }
+#tip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.14); padding: 8px 10px; font-size: 12px; min-width: 170px; }
+#tip .t { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+#tip .rw { display: flex; justify-content: space-between; gap: 14px; align-items: center; }
+#tip .rw b { font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+#tip .k { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+#tip .k i { width: 10px; height: 10px; display: inline-block; border-radius: 2px; }
+footer { color: var(--muted); font-size: 12px; }
+footer a { color: var(--ink-2); }
+</style>
+</head><body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Militia Long/Short Equity ETF</div>
+      <h1><span class="tk">ORR</span> book and trades</h1>
+    </div>
+    <div class="asof" id="asof"></div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <section class="panel" aria-labelledby="h-tr">
+    <div class="panel-head">
+      <div><h2 id="h-tr">What was traded</h2>
+        <div class="sub">Share-count changes between snapshots, % of NAV · bought above zero, sold below</div></div>
+      <div class="legend"><span><i style="background:var(--long)"></i>Long book</span><span><i style="background:var(--short)"></i>Short book</span></div>
+    </div>
+    <div id="tr-chart"></div>
+    <div class="panel-head" style="margin-top:14px">
+      <div class="sub" id="tr-sub"></div>
+    </div>
+    <div class="tablewrap"><table id="tr-table"></table></div>
+    <div class="note" id="tr-note"></div>
+    <button class="toggle" id="toggle-guide" type="button" aria-pressed="false">How this is measured</button>
+    <div class="guide" id="guide" hidden>
+      <p><b>Trades, not weight changes.</b> A position's weight moves every day with its price. A change in its share count is a decision, so that is what is listed. Buying shares (opening or adding to a long, covering a short) is above zero; selling (trimming or closing a long, shorting) is below.</p>
+      <p><b>Valued at the later day's price</b>, in dollars. The page gives prices in local currency (yen for Tokyo listings) and values in dollars, so each market's exchange rate comes from all of its rows together. Options use their own row's value per contract.</p>
+      <p><b>Creations and redemptions</b> scale every position by the same ratio. When most positions move by one common ratio, that is shown as a flow and each trade is measured against the scaled position, so new money does not show as two hundred small buys.</p>
+      <p><b>What a snapshot is.</b> The fund publishes one book per day, dated that morning. Two trades in the same name between snapshots net to one, and an intraday round trip is invisible.</p>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-exp">
+    <div class="panel-head">
+      <div><h2 id="h-exp">Exposure</h2><div class="sub">Long, short and net, % of NAV, excluding cash</div></div>
+      <div class="legend"><span><i class="ln" style="background:var(--long)"></i>Long</span><span><i class="ln" style="background:var(--short)"></i>Short</span><span><i class="ln" style="background:var(--net)"></i>Net</span></div>
+    </div>
+    <div id="exp-chart"></div>
+    <div class="note" id="exp-note"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-book">
+    <div class="panel-head">
+      <div><h2 id="h-book">The book</h2><div class="sub" id="book-sub"></div></div>
+      <div class="seg" id="book-side" role="group" aria-label="Side">
+        <button type="button" data-s="long" aria-pressed="true">Longs</button>
+        <button type="button" data-s="short" aria-pressed="false">Shorts</button>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="book-table"></table></div>
+    <button class="toggle" id="toggle-book" type="button" aria-pressed="false">Show all</button>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+<div id="tip" hidden></div>
+<script>
+(function () {
+  const D = {"generated_at":"2026-10-16T18:00","source":"https://militiaetf.com/","first":"2026-10-14","days":[{"date":"2026-10-14","nav":38.45,"price":38.59,"premium":0.0036,"net_assets":347620000.0,"long":1.3758000000000006,"short":-0.6707000000000001,"cash":0.2949,"n_long":166,"n_short":34},{"date":"2026-10-15","nav":38.35,"price":38.31,"premium":-0.001,"net_assets":346700000.0,"long":1.3687,"short":-0.6646000000000001,"cash":0.29589999999999994,"n_long":166,"n_short":34},{"date":"2026-10-16","nav":38.35,"price":38.6,"premium":0.006500000000000001,"net_assets":346700000.0,"long":1.3798,"short":-0.6752000000000001,"cash":0.2940999999999999,"n_long":187,"n_short":34}],"steps":[{"from":"2026-10-14","to":"2026-10-15","flow":1.0,"trades":[],"bought":0.0,"sold":0.0,"long_traded":0.0,"short_traded":0.0},{"from":"2026-10-15","to":"2026-10-16","flow":1.0,"trades":[{"ticker":"AMZN","name":"Amazon.com Inc","market":"US","kind":"security","action":"close","shares":-58385.0,"usd":-14830000.0,"pct":-0.04277473319873089,"side":"long","after":0.0},{"ticker":"GOOG","name":"Alphabet Inc","market":"US","kind":"security","action":"close","shares":-41175.0,"usd":-14150000.0,"pct":-0.040813383328526104,"side":"long","after":0.0},{"ticker":"AX","name":"Axos Financial Inc","market":"US","kind":"security","action":"trim","shares":-70091.0,"usd":-6135777.313666623,"pct":-0.017697655937890463,"side":"long","after":0.06},{"ticker":"CMPS","name":"Compass Pathways Plc","market":"US","kind":"security","action":"open","shares":348014.0,"usd":4040000.0,"pct":0.011652725699451976,"side":"long","after":0.011699999999999999},{"ticker":"MYRG","name":"MYR Group Inc","market":"US","kind":"security","action":"open","shares":14020.0,"usd":4000000.0,"pct":0.011537352177675224,"side":"long","after":0.0115},{"ticker":"AGQ","name":"PROSHARES TR II ULTRA SILVER NEW","market":"US","kind":"security","action":"open","shares":66547.0,"usd":3990000.0,"pct":0.011508508797231035,"side":"long","after":0.0115},{"ticker":"AMC","name":"AMC Entertainment Holdings Inc","market":"US","kind":"security","action":"open","shares":1313910.0,"usd":3970000.0,"pct":0.01145082203634266,"side":"long","after":0.011399999999999999},{"ticker":"MIAX","name":"Miami International Holdings Inc","market":"US","kind":"security","action":"open","shares":128050.0,"usd":3950000.0,"pct":0.011393135275454283,"side":"long","after":0.011399999999999999},{"ticker":"NDAQ","name":"Nasdaq Inc","market":"US","kind":"security","action":"open","shares":42293.0,"usd":3950000.0,"pct":0.011393135275454283,"side":"long","after":0.011399999999999999},{"ticker":"ICLR","name":"ICON PLC","market":"US","kind":"security","action":"open","shares":22522.0,"usd":3940000.0,"pct":0.011364291895010096,"side":"long","after":0.011399999999999999},{"ticker":"TKO","name":"TKO Group Holdings Inc","market":"US","kind":"security","action":"open","shares":22380.0,"usd":3940000.0,"pct":0.011364291895010096,"side":"long","after":0.011399999999999999},{"ticker":"COST","name":"Costco Wholesale Corp","market":"US","kind":"security","action":"open","shares":3978.0,"usd":3890000.0,"pct":0.011220074992789155,"side":"long","after":0.011200000000000002},{"ticker":"TIGO","name":"Millicom International Cellular SA","market":"US","kind":"security","action":"open","shares":33739.0,"usd":2770000.0,"pct":0.007989616383040092,"side":"long","after":0.008},{"ticker":"WLDN","name":"Willdan Group Inc","market":"US","kind":"security","action":"open","shares":38711.0,"usd":2770000.0,"pct":0.007989616383040092,"side":"long","after":0.008},{"ticker":"OC","name":"Owens Corning","market":"US","kind":"security","action":"open","shares":24249.0,"usd":2760000.0,"pct":0.007960773002595904,"side":"long","after":0.008},{"ticker":"OZK","name":"BANK OZK","market":"US","kind":"security","action":"open","shares":60145.0,"usd":2760000.0,"pct":0.007960773002595904,"side":"long","after":0.008},{"ticker":"CUBI","name":"Customers Bancorp Inc","market":"US","kind":"security","action":"open","shares":36999.0,"usd":2750000.0,"pct":0.007931929622151716,"side":"long","after":0.0079},{"ticker":"ET","name":"Energy Transfer LP","market":"US","kind":"security","action":"trim","shares":-137441.0,"usd":-2732425.447316103,"pct":-0.007881238671231909,"side":"long","after":0.0318},{"ticker":"CSWC","name":"Capital Southwest Corp","market":"US","kind":"security","action":"trim","shares":-113530.0,"usd":-2670233.0054462017,"pct":-0.007701854645071248,"side":"long","after":0.026000000000000002},{"ticker":"WES","name":"Western Midstream Partners LP","market":"US","kind":"security","action":"trim","shares":-49182.0,"usd":-2169737.643476224,"pct":-0.00625825683148608,"side":"long","after":0.022799999999999997},{"ticker":"PAC","name":"Grupo Aeroportuario del Pacifico SAB de CV","market":"US","kind":"security","action":"trim","shares":-10500.0,"usd":-2121905.8766826177,"pct":-0.006120293846791513,"side":"long","after":0.0169},{"ticker":"OMAB","name":"Grupo Aeroportuario del Centro Norte SAB de CV","market":"US","kind":"security","action":"trim","shares":-21157.0,"usd":-1933720.8557706303,"pct":-0.005577504631585319,"side":"long","after":0.0181},{"ticker":"AER","name":"AerCap Holdings NV","market":"US","kind":"security","action":"trim","shares":-12135.0,"usd":-1770940.789840138,"pct":-0.005107991894548999,"side":"long","after":0.0151},{"ticker":"AGM","name":"Federal Agricultural Mortgage Corp","market":"US","kind":"security","action":"trim","shares":-8134.0,"usd":-1678271.2640050496,"pct":-0.0048407016556246026,"side":"long","after":0.0151},{"ticker":"BKD","name":"Brookdale Senior Living Inc","market":"US","kind":"security","action":"add","shares":161845.0,"usd":1632192.3749612118,"pct":0.004707794562910908,"side":"long","after":0.0124},{"ticker":"SYF","name":"Synchrony Financial","market":"US","kind":"security","action":"trim","shares":-20186.0,"usd":-1495322.9171101367,"pct":-0.004313016778512076,"side":"long","after":0.015},{"ticker":"MPLX","name":"MPLX LP","market":"US","kind":"security","action":"trim","shares":-25948.0,"usd":-1483458.757173739,"pct":-0.004278796530642454,"side":"long","after":0.015},{"ticker":"SFM","name":"Sprouts Farmers Market Inc","market":"US","kind":"security","action":"trim","shares":-22173.0,"usd":-1478865.1923756872,"pct":-0.004265547136935931,"side":"long","after":0.012},{"ticker":"INSM","name":"Insmed Inc","market":"US","kind":"security","action":"open","shares":14032.0,"usd":1390000.0,"pct":0.00400922988174214,"side":"long","after":0.004},{"ticker":"OFG","name":"OFG Bancorp","market":"US","kind":"security","action":"open","shares":26670.0,"usd":1390000.0,"pct":0.00400922988174214,"side":"long","after":0.004},{"ticker":"RRX","name":"Regal Rexnord Corp","market":"US","kind":"security","action":"open","shares":8909.0,"usd":1390000.0,"pct":0.00400922988174214,"side":"long","after":0.004},{"ticker":"MEDP","name":"Medpace Holdings Inc","market":"US","kind":"security","action":"trim","shares":-2213.0,"usd":-1389278.2995551163,"pct":-0.004007148253692288,"side":"long","after":0.011000000000000001},{"ticker":"BFAM","name":"Bright Horizons Family Solutions Inc","market":"US","kind":"security","action":"open","shares":19593.0,"usd":1380000.0000000002,"pct":0.003980386501297953,"side":"long","after":0.004},{"ticker":"BBIO","name":"Bridgebio Pharma Inc","market":"US","kind":"security","action":"open","shares":20609.0,"usd":1380000.0,"pct":0.003980386501297952,"side":"long","after":0.004},{"ticker":"BCS","name":"Barclays PLC","market":"US","kind":"security","action":"open","shares":60468.0,"usd":1380000.0,"pct":0.003980386501297952,"side":"long","after":0.004},{"ticker":"CYTK","name":"Cytokinetics Inc","market":"US","kind":"security","action":"open","shares":21588.0,"usd":1380000.0,"pct":0.003980386501297952,"side":"long","after":0.004},{"ticker":"RELX","name":"RELX PLC","market":"US","kind":"security","action":"open","shares":36030.0,"usd":1380000.0,"pct":0.003980386501297952,"side":"long","after":0.004},{"ticker":"RVMD","name":"Revolution Medicines Inc","market":"US","kind":"security","action":"open","shares":7247.0,"usd":1370000.0,"pct":0.003951543120853764,"side":"long","after":0.004},{"ticker":"CAAP","name":"Corp America Airports SA","market":"US","kind":"security","action":"trim","shares":-49674.0,"usd":-1225251.372118551,"pct":-0.00353403914657788,"side":"long","after":0.011000000000000001},{"ticker":"KSPI","name":"Kaspi.KZ JSC","market":"US","kind":"security","action":"trim","shares":-12613.0,"usd":-1195298.7227029253,"pct":-0.0034476455803372523,"side":"long","after":0.009300000000000001},{"ticker":"NTB","name":"Bank of NT Butterfield & Son Ltd/The","market":"US","kind":"security","action":"trim","shares":-18859.0,"usd":-1098921.543711879,"pct":-0.0031696612163596167,"side":"long","after":0.009300000000000001},{"ticker":"LHX","name":"L3Harris Technologies Inc","market":"US","kind":"security","action":"add","shares":4457.0,"usd":1072247.5587802085,"pct":0.003092724426824945,"side":"long","after":0.0127},{"ticker":"FIGR","name":"Figure Technology Solutions Inc","market":"US","kind":"security","action":"add","shares":37187.0,"usd":1029531.5136047065,"pct":0.0029695169126181323,"side":"long","after":0.0092},{"ticker":"ASR","name":"Grupo Aeroportuario del Sureste SAB de CV","market":"US","kind":"security","action":"trim","shares":-4322.0,"usd":-1015420.760358821,"pct":-0.0029288167301956187,"side":"long","after":0.0095},{"ticker":"KRMN","name":"Karman Holdings Inc","market":"US","kind":"security","action":"trim","shares":-29814.0,"usd":-1011283.5566988921,"pct":-0.002916883636281777,"side":"long","after":0.009399999999999999},{"ticker":"ABVX","name":"Abivax SA","market":"US","kind":"security","action":"trim","shares":-10191.0,"usd":-942817.4936921783,"pct":-0.0027194043659999373,"side":"long","after":0.006},{"ticker":"CNQ","name":"Canadian Natural Resources Ltd","market":"US","kind":"security","action":"trim","shares":-18097.0,"usd":-939330.0330410326,"pct":-0.0027093453505654245,"side":"long","after":0.0131},{"ticker":"APP","name":"AppLovin Corp","market":"US","kind":"security","action":"trim","shares":-2149.0,"usd":-599411.1570247934,"pct":-0.0017289044044557064,"side":"long","after":0.009399999999999999},{"ticker":"CBOE","name":"Cboe Global Markets Inc","market":"US","kind":"security","action":"trim","shares":-1945.0,"usd":-599204.6446070205,"pct":-0.0017283087528324793,"side":"long","after":0.0132},{"ticker":"CRH","name":"CRH PLC","market":"US","kind":"security","action":"trim","shares":-6883.0,"usd":-568031.5843097301,"pct":-0.001638395109056043,"side":"long","after":0.004699999999999999},{"ticker":"INTR","name":"Inter & Co Inc","market":"US","kind":"security","action":"trim","shares":-81559.0,"usd":-549808.9279319134,"pct":-0.0015858348079951354,"side":"long","after":0.0046},{"ticker":"STT","name":"State Street Corp","market":"US","kind":"security","action":"add","shares":2593.0,"usd":434457.50083404384,"pct":0.0012531222983387478,"side":"long","after":0.013000000000000001},{"ticker":"JAN","name":"Janus Living Inc","market":"US","kind":"security","action":"add","shares":10095.0,"usd":295473.0235129598,"pct":0.0008522440828178823,"side":"long","after":0.013000000000000001},{"ticker":"BLK","name":"Blackrock Inc","market":"US","kind":"security","action":"trim","shares":-129.0,"usd":-144482.50728862974,"pct":-0.0004167363925256122,"side":"long","after":0.013300000000000001},{"ticker":"LLY","name":"Eli Lilly & Co","market":"US","kind":"security","action":"add","shares":98.0,"usd":122533.96174105904,"pct":0.00035342936758309503,"side":"long","after":0.013000000000000001},{"ticker":"AMG","name":"Affiliated Managers Group Inc","market":"US","kind":"security","action":"trim","shares":-165.0,"usd":-63239.940139674094,"pct":-0.00018240536527162993,"side":"long","after":0.013300000000000001}],"bought":0.19182704336150616,"sold":0.19034450419972399,"long_traded":0.3821715475612302,"short_traded":0.0}],"book":[{"ticker":"DVY","name":"iShares Select Dividend ETF","market":"US","kind":"security","weight":-0.12789999999999999,"since":"2026-10-14"},{"ticker":"9435 JP","name":"Hikari Tsushin Inc","market":"JP","kind":"security","weight":0.1162,"since":"2026-10-14"},{"ticker":"VB","name":"Vanguard Morningstar Small-Cap ETF","market":"US","kind":"security","weight":-0.1009,"since":"2026-10-14"},{"ticker":"IJR","name":"iShares Core S&P Small-Cap ETF","market":"US","kind":"security","weight":-0.09910000000000001,"since":"2026-10-14"},{"ticker":"AX","name":"Axos Financial Inc","market":"US","kind":"security","weight":0.06,"since":"2026-10-14"},{"ticker":"SPYD","name":"State Street SPDR Portfolio S&P 500 High Dividend ETF","market":"US","kind":"security","weight":-0.0509,"since":"2026-10-14"},{"ticker":"7453 JP","name":"Ryohin Keikaku Co Ltd","market":"JP","kind":"security","weight":0.0455,"since":"2026-10-14"},{"ticker":"GMEXICOB MM","name":"Grupo Mexico SAB de CV","market":"MM","kind":"security","weight":0.0385,"since":"2026-10-14"},{"ticker":"ET","name":"Energy Transfer LP","market":"US","kind":"security","weight":0.0318,"since":"2026-10-14"},{"ticker":"EFA","name":"iShares MSCI EAFE ETF","market":"US","kind":"security","weight":-0.031,"since":"2026-10-14"},{"ticker":"SDIV","name":"Global X SuperDividend ETF","market":"US","kind":"security","weight":-0.0287,"since":"2026-10-14"},{"ticker":"GDWN LN","name":"Goodwin PLC","market":"LN","kind":"security","weight":0.0268,"since":"2026-10-14"},{"ticker":"CSWC","name":"Capital Southwest Corp","market":"US","kind":"security","weight":0.026000000000000002,"since":"2026-10-14"},{"ticker":"WES","name":"Western Midstream Partners LP","market":"US","kind":"security","weight":0.022799999999999997,"since":"2026-10-14"},{"ticker":"BNP FP","name":"BNP Paribas SA","market":"FP","kind":"security","weight":0.022000000000000002,"since":"2026-10-14"},{"ticker":"OMAB","name":"Grupo Aeroportuario del Centro Norte SAB de CV","market":"US","kind":"security","weight":0.0181,"since":"2026-10-14"},{"ticker":"PAC","name":"Grupo Aeroportuario del Pacifico SAB de CV","market":"US","kind":"security","weight":0.0169,"since":"2026-10-14"},{"ticker":"RWAY","name":"Runway Growth Finance Corp","market":"US","kind":"security","weight":-0.0169,"since":"2026-10-14"},{"ticker":"RMS FP","name":"Hermes International SCA","market":"FP","kind":"security","weight":0.0166,"since":"2026-10-14"},{"ticker":"AER","name":"AerCap Holdings NV","market":"US","kind":"security","weight":0.0151,"since":"2026-10-14"},{"ticker":"AGM","name":"Federal Agricultural Mortgage Corp","market":"US","kind":"security","weight":0.0151,"since":"2026-10-14"},{"ticker":"MPLX","name":"MPLX LP","market":"US","kind":"security","weight":0.015,"since":"2026-10-14"},{"ticker":"SYF","name":"Synchrony Financial","market":"US","kind":"security","weight":0.015,"since":"2026-10-14"},{"ticker":"OXLC","name":"Oxford Lane Capital Corp","market":"US","kind":"security","weight":-0.0146,"since":"2026-10-14"},{"ticker":"IDR SM","name":"Indra Sistemas SA","market":"SM","kind":"security","weight":0.014499999999999999,"since":"2026-10-14"},{"ticker":"GRUMAB MM","name":"Gruma SAB de CV","market":"MM","kind":"security","weight":0.013600000000000001,"since":"2026-10-14"},{"ticker":"AMG","name":"Affiliated Managers Group Inc","market":"US","kind":"security","weight":0.013300000000000001,"since":"2026-10-14"},{"ticker":"BLK","name":"Blackrock Inc","market":"US","kind":"security","weight":0.013300000000000001,"since":"2026-10-14"},{"ticker":"CBOE","name":"Cboe Global Markets Inc","market":"US","kind":"security","weight":0.0132,"since":"2026-10-14"},{"ticker":"CNQ","name":"Canadian Natural Resources Ltd","market":"US","kind":"security","weight":0.0131,"since":"2026-10-14"},{"ticker":"JAN","name":"Janus Living Inc","market":"US","kind":"security","weight":0.013000000000000001,"since":"2026-10-14"},{"ticker":"LLY","name":"Eli Lilly & Co","market":"US","kind":"security","weight":0.013000000000000001,"since":"2026-10-14"},{"ticker":"STT","name":"State Street Corp","market":"US","kind":"security","weight":0.013000000000000001,"since":"2026-10-14"},{"ticker":"LHX","name":"L3Harris Technologies Inc","market":"US","kind":"security","weight":0.0127,"since":"2026-10-14"},{"ticker":"PSEC","name":"Prospect Capital Corp","market":"US","kind":"security","weight":-0.0126,"since":"2026-10-14"},{"ticker":"BKD","name":"Brookdale Senior Living Inc","market":"US","kind":"security","weight":0.0124,"since":"2026-10-14"},{"ticker":"SFM","name":"Sprouts Farmers Market Inc","market":"US","kind":"security","weight":0.012,"since":"2026-10-14"},{"ticker":"SRC LN","name":"SigmaRoc PLC","market":"LN","kind":"security","weight":0.0118,"since":"2026-10-14"},{"ticker":"CMPS","name":"Compass Pathways Plc","market":"US","kind":"security","weight":0.011699999999999999,"since":"2026-10-16"},{"ticker":"MO","name":"Altria Group Inc","market":"US","kind":"security","weight":-0.0116,"since":"2026-10-14"},{"ticker":"AGQ","name":"PROSHARES TR II ULTRA SILVER NEW","market":"US","kind":"security","weight":0.0115,"since":"2026-10-16"},{"ticker":"MYRG","name":"MYR Group Inc","market":"US","kind":"security","weight":0.0115,"since":"2026-10-16"},{"ticker":"AMC","name":"AMC Entertainment Holdings Inc","market":"US","kind":"security","weight":0.011399999999999999,"since":"2026-10-16"},{"ticker":"ICLR","name":"ICON PLC","market":"US","kind":"security","weight":0.011399999999999999,"since":"2026-10-16"},{"ticker":"MIAX","name":"Miami International Holdings Inc","market":"US","kind":"security","weight":0.011399999999999999,"since":"2026-10-16"},{"ticker":"NDAQ","name":"Nasdaq Inc","market":"US","kind":"security","weight":0.011399999999999999,"since":"2026-10-16"},{"ticker":"SBUX","name":"Starbucks Corp","market":"US","kind":"security","weight":-0.011399999999999999,"since":"2026-10-14"},{"ticker":"TKO","name":"TKO Group Holdings Inc","market":"US","kind":"security","weight":0.011399999999999999,"since":"2026-10-16"},{"ticker":"9042 JP","name":"Hankyu Hanshin Holdings Inc","market":"JP","kind":"security","weight":0.0113,"since":"2026-10-14"},{"ticker":"COST","name":"Costco Wholesale Corp","market":"US","kind":"security","weight":0.011200000000000002,"since":"2026-10-16"},{"ticker":"CAAP","name":"Corp America Airports SA","market":"US","kind":"security","weight":0.011000000000000001,"since":"2026-10-14"},{"ticker":"MEDP","name":"Medpace Holdings Inc","market":"US","kind":"security","weight":0.011000000000000001,"since":"2026-10-14"},{"ticker":"MSOS","name":"AdvisorShares Pure US Cannabis ETF","market":"US","kind":"security","weight":-0.011000000000000001,"since":"2026-10-14"},{"ticker":"DLR","name":"Digital Realty Trust Inc","market":"US","kind":"security","weight":-0.0108,"since":"2026-10-14"},{"ticker":"TCPC","name":"BlackRock TCP Capital Corp","market":"US","kind":"security","weight":-0.010700000000000001,"since":"2026-10-14"},{"ticker":"BBY","name":"Best Buy Co Inc","market":"US","kind":"security","weight":-0.0105,"since":"2026-10-14"},{"ticker":"CVNA","name":"Carvana Co","market":"US","kind":"security","weight":-0.0102,"since":"2026-10-14"},{"ticker":"WFC","name":"Wells Fargo & Co","market":"US","kind":"security","weight":-0.009899999999999999,"since":"2026-10-14"},{"ticker":"FSK","name":"FS KKR Capital Corp","market":"US","kind":"security","weight":-0.0097,"since":"2026-10-14"},{"ticker":"8601 JP","name":"Daiwa Securities Group Inc","market":"JP","kind":"security","weight":0.0096,"since":"2026-10-14"},{"ticker":"AENA SM","name":"Aena SME SA","market":"SM","kind":"security","weight":0.0095,"since":"2026-10-14"},{"ticker":"ASR","name":"Grupo Aeroportuario del Sureste SAB de CV","market":"US","kind":"security","weight":0.0095,"since":"2026-10-14"},{"ticker":"APP","name":"AppLovin Corp","market":"US","kind":"security","weight":0.009399999999999999,"since":"2026-10-14"},{"ticker":"BN","name":"Brookfield Corp","market":"US","kind":"security","weight":-0.009399999999999999,"since":"2026-10-14"},{"ticker":"KRMN","name":"Karman Holdings Inc","market":"US","kind":"security","weight":0.009399999999999999,"since":"2026-10-14"},{"ticker":"KSPI","name":"Kaspi.KZ JSC","market":"US","kind":"security","weight":0.009300000000000001,"since":"2026-10-14"},{"ticker":"NTB","name":"Bank of NT Butterfield & Son Ltd/The","market":"US","kind":"security","weight":0.009300000000000001,"since":"2026-10-14"},{"ticker":"5842 JP","name":"Integral Group Corp","market":"JP","kind":"security","weight":0.0092,"since":"2026-10-14"},{"ticker":"8001 JP","name":"ITOCHU Corp","market":"JP","kind":"security","weight":0.0092,"since":"2026-10-14"},{"ticker":"FIGR","name":"Figure Technology Solutions Inc","market":"US","kind":"security","weight":0.0092,"since":"2026-10-14"},{"ticker":"OBDC","name":"Blue Owl Capital Corp","market":"US","kind":"security","weight":-0.0092,"since":"2026-10-14"},{"ticker":"8058 JP","name":"Mitsubishi Corp","market":"JP","kind":"security","weight":0.009000000000000001,"since":"2026-10-14"},{"ticker":"3003 JP","name":"Hulic Co Ltd","market":"JP","kind":"security","weight":0.0087,"since":"2026-10-14"},{"ticker":"1928 JP","name":"Sekisui House Ltd","market":"JP","kind":"security","weight":0.0086,"since":"2026-10-14"},{"ticker":"6432 JP","name":"Takeuchi Manufacturing Co Ltd","market":"JP","kind":"security","weight":0.0086,"since":"2026-10-14"},{"ticker":"8078 JP","name":"Hanwa Co Ltd","market":"JP","kind":"security","weight":0.0086,"since":"2026-10-14"},{"ticker":"KRC","name":"Kilroy Realty Corp","market":"US","kind":"security","weight":-0.0086,"since":"2026-10-14"},{"ticker":"8411 JP","name":"Mizuho Financial Group Inc","market":"JP","kind":"security","weight":0.0084,"since":"2026-10-14"},{"ticker":"STX","name":"Seagate Technology Holdings PLC","market":"US","kind":"security","weight":-0.0083,"since":"2026-10-14"},{"ticker":"1925 JP","name":"Daiwa House Industry Co Ltd","market":"JP","kind":"security","weight":0.008199999999999999,"since":"2026-10-14"},{"ticker":"WALMEX* MM","name":"Wal-Mart de Mexico SAB de CV","market":"MM","kind":"security","weight":0.008199999999999999,"since":"2026-10-14"},{"ticker":"9022 JP","name":"Central Japan Railway Co","market":"JP","kind":"security","weight":0.008100000000000001,"since":"2026-10-14"},{"ticker":"OC","name":"Owens Corning","market":"US","kind":"security","weight":0.008,"since":"2026-10-16"},{"ticker":"OZK","name":"BANK OZK","market":"US","kind":"security","weight":0.008,"since":"2026-10-16"},{"ticker":"TIGO","name":"Millicom International Cellular SA","market":"US","kind":"security","weight":0.008,"since":"2026-10-16"},{"ticker":"WLDN","name":"Willdan Group Inc","market":"US","kind":"security","weight":0.008,"since":"2026-10-16"},{"ticker":"3231 JP","name":"Nomura Real Estate Holdings Inc","market":"JP","kind":"security","weight":0.0079,"since":"2026-10-14"},{"ticker":"CUBI","name":"Customers Bancorp Inc","market":"US","kind":"security","weight":0.0079,"since":"2026-10-16"},{"ticker":"DEI","name":"Douglas Emmett Inc","market":"US","kind":"security","weight":-0.0076,"since":"2026-10-14"},{"ticker":"JBGS","name":"JBG SMITH Properties","market":"US","kind":"security","weight":-0.0074,"since":"2026-10-14"},{"ticker":"8473 JP","name":"SBI Holdings Inc","market":"JP","kind":"security","weight":0.006999999999999999,"since":"2026-10-14"},{"ticker":"8697 JP","name":"Japan Exchange Group Inc","market":"JP","kind":"security","weight":0.006999999999999999,"since":"2026-10-14"},{"ticker":"HPP","name":"Hudson Pacific Properties Inc","market":"US","kind":"security","weight":-0.006999999999999999,"since":"2026-10-14"},{"ticker":"NIO","name":"NIO Inc","market":"US","kind":"security","weight":-0.0067,"since":"2026-10-14"},{"ticker":"NWG LN","name":"NatWest Group PLC","market":"LN","kind":"security","weight":0.006500000000000001,"since":"2026-10-14"},{"ticker":"9418 JP","name":"U-Next Holdings Co Ltd","market":"JP","kind":"security","weight":0.0063,"since":"2026-10-14"},{"ticker":"LULU","name":"Lululemon Athletica Inc","market":"US","kind":"security","weight":-0.0063,"since":"2026-10-14"},{"ticker":"7419 JP","name":"Nojima Corp","market":"JP","kind":"security","weight":0.0062,"since":"2026-10-14"},{"ticker":"PKBK","name":"Parke Bancorp Inc","market":"US","kind":"security","weight":0.0062,"since":"2026-10-14"},{"ticker":"ABVX","name":"Abivax SA","market":"US","kind":"security","weight":0.006,"since":"2026-10-14"},{"ticker":"7744 JP","name":"Noritsu Koki Co Ltd","market":"JP","kind":"security","weight":0.0059,"since":"2026-10-14"},{"ticker":"8604 JP","name":"Nomura Holdings Inc","market":"JP","kind":"security","weight":0.0059,"since":"2026-10-14"},{"ticker":"BUR","name":"Burford Capital Ltd","market":"US","kind":"security","weight":-0.0059,"since":"2026-10-14"},{"ticker":"2768 JP","name":"Sojitz Corp","market":"JP","kind":"security","weight":0.0058,"since":"2026-10-14"},{"ticker":"8031 JP","name":"Mitsui & Co Ltd","market":"JP","kind":"security","weight":0.0055000000000000005,"since":"2026-10-14"},{"ticker":"2201 JP","name":"Morinaga & Co Ltd/Japan","market":"JP","kind":"security","weight":0.0054,"since":"2026-10-14"},{"ticker":"7609 JP","name":"Daitron Co Ltd","market":"JP","kind":"security","weight":0.0054,"since":"2026-10-14"},{"ticker":"8154 JP","name":"Kaga Electronics Co Ltd","market":"JP","kind":"security","weight":0.0054,"since":"2026-10-14"},{"ticker":"8194 JP","name":"Life Corp","market":"JP","kind":"security","weight":0.0054,"since":"2026-10-14"},{"ticker":"JFN SW","name":"Jungfraubahn Holding AG","market":"SW","kind":"security","weight":0.0053,"since":"2026-10-14"},{"ticker":"KMX","name":"CarMax Inc","market":"US","kind":"security","weight":-0.0053,"since":"2026-10-14"},{"ticker":"6676 JP","name":"Buffalo Inc /Japan","market":"JP","kind":"security","weight":0.0052,"since":"2026-10-14"},{"ticker":"1515 JP","name":"Nittetsu Mining Co Ltd","market":"JP","kind":"security","weight":0.005,"since":"2026-10-14"},{"ticker":"ARCC","name":"Ares Capital Corp","market":"US","kind":"security","weight":-0.0049,"since":"2026-10-14"},{"ticker":"8803 JP","name":"Heiwa Real Estate Co Ltd","market":"JP","kind":"security","weight":0.0048,"since":"2026-10-14"},{"ticker":"4628 JP","name":"SK Kaken Co Ltd","market":"JP","kind":"security","weight":0.004699999999999999,"since":"2026-10-14"},{"ticker":"CRH","name":"CRH PLC","market":"US","kind":"security","weight":0.004699999999999999,"since":"2026-10-14"},{"ticker":"INTR","name":"Inter & Co Inc","market":"US","kind":"security","weight":0.0046,"since":"2026-10-14"},{"ticker":"1801 JP","name":"Taisei Corp","market":"JP","kind":"security","weight":0.0044,"since":"2026-10-14"},{"ticker":"8053 JP","name":"Sumitomo Corp","market":"JP","kind":"security","weight":0.0044,"since":"2026-10-14"},{"ticker":"1913 HK","name":"PRADA SpA","market":"HK","kind":"security","weight":0.0043,"since":"2026-10-14"},{"ticker":"8804 JP","name":"Tokyo Tatemono Co Ltd","market":"JP","kind":"security","weight":0.0042,"since":"2026-10-14"},{"ticker":"2602 JP","name":"Nisshin Oillio Group Ltd/The","market":"JP","kind":"security","weight":0.0040999999999999995,"since":"2026-10-14"},{"ticker":"6951 JP","name":"Jeol Ltd","market":"JP","kind":"security","weight":0.0040999999999999995,"since":"2026-10-14"},{"ticker":"BBIO","name":"Bridgebio Pharma Inc","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"BCS","name":"Barclays PLC","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"BFAM","name":"Bright Horizons Family Solutions Inc","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"CYTK","name":"Cytokinetics Inc","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"INSM","name":"Insmed Inc","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"JBLU","name":"JetBlue Airways Corp","market":"US","kind":"security","weight":-0.004,"since":"2026-10-14"},{"ticker":"OFG","name":"OFG Bancorp","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"RELX","name":"RELX PLC","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"RRX","name":"Regal Rexnord Corp","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"RVMD","name":"Revolution Medicines Inc","market":"US","kind":"security","weight":0.004,"since":"2026-10-16"},{"ticker":"5480 JP","name":"Nippon Yakin Kogyo Co Ltd","market":"JP","kind":"security","weight":0.0039000000000000003,"since":"2026-10-14"},{"ticker":"6061 JP","name":"Universal Engeisha KK","market":"JP","kind":"security","weight":0.0039000000000000003,"since":"2026-10-14"},{"ticker":"8850 JP","name":"Starts Corp Inc","market":"JP","kind":"security","weight":0.0039000000000000003,"since":"2026-10-14"},{"ticker":"6845 JP","name":"Azbil Corp","market":"JP","kind":"security","weight":0.0038,"since":"2026-10-14"},{"ticker":"6250 JP","name":"YAMABIKO Corp","market":"JP","kind":"security","weight":0.0037,"since":"2026-10-14"},{"ticker":"FHZN SW","name":"Flughafen Zurich AG","market":"SW","kind":"security","weight":0.0037,"since":"2026-10-14"},{"ticker":"9960 JP","name":"Totech Corp","market":"JP","kind":"security","weight":0.0036,"since":"2026-10-14"},{"ticker":"3288 JP","name":"Open House Group Co Ltd","market":"JP","kind":"security","weight":0.0034999999999999996,"since":"2026-10-14"},{"ticker":"4975 JP","name":"JCU Corp","market":"JP","kind":"security","weight":0.0034000000000000002,"since":"2026-10-14"},{"ticker":"7821 JP","name":"Maeda Kosen Co Ltd","market":"JP","kind":"security","weight":0.0034000000000000002,"since":"2026-10-14"},{"ticker":"2685 JP","name":"and ST HD Co Ltd","market":"JP","kind":"security","weight":0.0033,"since":"2026-10-14"},{"ticker":"8074 JP","name":"Yuasa Co Ltd","market":"JP","kind":"security","weight":0.0033,"since":"2026-10-14"},{"ticker":"5351 JP","name":"Shinagawa Refra Co Ltd","market":"JP","kind":"security","weight":0.0032,"since":"2026-10-14"},{"ticker":"5982 JP","name":"Maruzen Co Ltd/Taito ward","market":"JP","kind":"security","weight":0.0032,"since":"2026-10-14"},{"ticker":"6340 JP","name":"Shibuya Corp","market":"JP","kind":"security","weight":0.0032,"since":"2026-10-14"},{"ticker":"7740 JP","name":"Tamron Co Ltd","market":"JP","kind":"security","weight":0.0032,"since":"2026-10-14"},{"ticker":"8704 JP","name":"Traders Holdings Co Ltd","market":"JP","kind":"security","weight":0.0031,"since":"2026-10-14"},{"ticker":"6420 JP","name":"Galilei Holdings Co Ltd","market":"JP","kind":"security","weight":0.003,"since":"2026-10-14"},{"ticker":"1879 JP","name":"Shinnihon Corp","market":"JP","kind":"security","weight":0.0029,"since":"2026-10-14"},{"ticker":"5715 JP","name":"Furukawa Co Ltd","market":"JP","kind":"security","weight":0.0029,"since":"2026-10-14"},{"ticker":"5958 JP","name":"Sanyo Industries Ltd","market":"JP","kind":"security","weight":0.0029,"since":"2026-10-14"},{"ticker":"6745 JP","name":"Hochiki Corp","market":"JP","kind":"security","weight":0.0029,"since":"2026-10-14"},{"ticker":"6349 JP","name":"Komori Corp","market":"JP","kind":"security","weight":0.0028000000000000004,"since":"2026-10-14"},{"ticker":"1911 JP","name":"Sumitomo Forestry Co Ltd","market":"JP","kind":"security","weight":0.0027,"since":"2026-10-14"},{"ticker":"6023 JP","name":"Daihatsu Infinearth Mfg Co Ltd","market":"JP","kind":"security","weight":0.0027,"since":"2026-10-14"},{"ticker":"6929 JP","name":"Nippon Ceramic Co Ltd","market":"JP","kind":"security","weight":0.0026,"since":"2026-10-14"},{"ticker":"2001 JP","name":"Nippn Corp","market":"JP","kind":"security","weight":0.0025,"since":"2026-10-14"},{"ticker":"5889 JP","name":"Japan Eyewear Holdings Co Ltd","market":"JP","kind":"security","weight":0.0025,"since":"2026-10-14"},{"ticker":"6125 JP","name":"Okamoto Machine Tool Works Ltd","market":"JP","kind":"security","weight":0.0025,"since":"2026-10-14"},{"ticker":"8066 JP","name":"Mitani Corp","market":"JP","kind":"security","weight":0.0024,"since":"2026-10-14"},{"ticker":"2742 JP","name":"Halows Co Ltd","market":"JP","kind":"security","weight":0.0023,"since":"2026-10-14"},{"ticker":"2801 JP","name":"Kikkoman Corp","market":"JP","kind":"security","weight":0.0023,"since":"2026-10-14"},{"ticker":"8935 JP","name":"FJ Next Holdings Co Ltd","market":"JP","kind":"security","weight":0.0023,"since":"2026-10-14"},{"ticker":"OPEN","name":"Opendoor Technologies Inc","market":"US","kind":"security","weight":-0.0023,"since":"2026-10-14"},{"ticker":"3679 JP","name":"ZIGExN Co Ltd","market":"JP","kind":"security","weight":0.0022,"since":"2026-10-14"},{"ticker":"8052 JP","name":"Tsubakimoto Kogyo Co Ltd","market":"JP","kind":"security","weight":0.0022,"since":"2026-10-14"},{"ticker":"1663 JP","name":"K&O Energy Group Inc","market":"JP","kind":"security","weight":0.0021,"since":"2026-10-14"},{"ticker":"1930 JP","name":"Hokuriku Electrical Construction Co Ltd","market":"JP","kind":"security","weight":0.0021,"since":"2026-10-14"},{"ticker":"4465 JP","name":"Niitaka Co Ltd","market":"JP","kind":"security","weight":0.0021,"since":"2026-10-14"},{"ticker":"6874 JP","name":"Kyoritsu Electric Corp","market":"JP","kind":"security","weight":0.0021,"since":"2026-10-14"},{"ticker":"1847 JP","name":"Ichiken Co Ltd","market":"JP","kind":"security","weight":0.002,"since":"2026-10-14"},{"ticker":"3176 JP","name":"Sanyo Trading Co Ltd","market":"JP","kind":"security","weight":0.002,"since":"2026-10-14"},{"ticker":"4743 JP","name":"Itfor Inc","market":"JP","kind":"security","weight":0.002,"since":"2026-10-14"},{"ticker":"8043 JP","name":"Starzen Co Ltd","market":"JP","kind":"security","weight":0.002,"since":"2026-10-14"},{"ticker":"OCSL","name":"Oaktree Specialty Lending Corp","market":"US","kind":"security","weight":-0.002,"since":"2026-10-14"},{"ticker":"1828 JP","name":"TANABE ENGINEERING CORP","market":"JP","kind":"security","weight":0.0019,"since":"2026-10-14"},{"ticker":"4318 JP","name":"Quick Co Ltd","market":"JP","kind":"security","weight":0.0019,"since":"2026-10-14"},{"ticker":"7864 JP","name":"Fuji Seal International Inc","market":"JP","kind":"security","weight":0.0019,"since":"2026-10-14"},{"ticker":"9702 JP","name":"ISB Corp","market":"JP","kind":"security","weight":0.0019,"since":"2026-10-14"},{"ticker":"CION","name":"CION Investment Corp","market":"US","kind":"security","weight":-0.0019,"since":"2026-10-14"},{"ticker":"2222 JP","name":"Kotobuki Spirits Co Ltd","market":"JP","kind":"security","weight":0.0018,"since":"2026-10-14"},{"ticker":"3321 JP","name":"Mitachi Co Ltd","market":"JP","kind":"security","weight":0.0018,"since":"2026-10-14"},{"ticker":"7326 JP","name":"SBI Insurance Group Co Ltd","market":"JP","kind":"security","weight":0.0018,"since":"2026-10-14"},{"ticker":"8059 JP","name":"Daiichi Jitsugyo Co Ltd","market":"JP","kind":"security","weight":0.0018,"since":"2026-10-14"},{"ticker":"9739 JP","name":"NSW Inc/Japan","market":"JP","kind":"security","weight":0.0017000000000000001,"since":"2026-10-14"},{"ticker":"2924 JP","name":"Ifuji Sangyo Co Ltd","market":"JP","kind":"security","weight":0.0016,"since":"2026-10-14"},{"ticker":"4251 JP","name":"KEIWA Inc","market":"JP","kind":"security","weight":0.0016,"since":"2026-10-14"},{"ticker":"4783 JP","name":"NCD Co Ltd/Shinagawa","market":"JP","kind":"security","weight":0.0016,"since":"2026-10-14"},{"ticker":"3762 JP","name":"TechMatrix Corp","market":"JP","kind":"security","weight":0.0015,"since":"2026-10-14"},{"ticker":"7521 JP","name":"Musashi Co Ltd","market":"JP","kind":"security","weight":0.0015,"since":"2026-10-14"},{"ticker":"1866 JP","name":"Kitano Construction Corp","market":"JP","kind":"security","weight":0.0014000000000000002,"since":"2026-10-14"},{"ticker":"5363 JP","name":"TYK Corp/Tokyo","market":"JP","kind":"security","weight":0.0014000000000000002,"since":"2026-10-14"},{"ticker":"7781 JP","name":"HIRAYAMA Holdings Co Ltd","market":"JP","kind":"security","weight":0.0014000000000000002,"since":"2026-10-14"},{"ticker":"9273 JP","name":"Koa Shoji Holdings Co Ltd","market":"JP","kind":"security","weight":0.0013,"since":"2026-10-14"},{"ticker":"2208 JP","name":"Bourbon Corp/Japan","market":"JP","kind":"security","weight":0.0012,"since":"2026-10-14"},{"ticker":"6626 JP","name":"SEMITEC Corp","market":"JP","kind":"security","weight":0.0012,"since":"2026-10-14"},{"ticker":"9628 JP","name":"San Holdings Inc","market":"JP","kind":"security","weight":0.0012,"since":"2026-10-14"},{"ticker":"1867 JP","name":"Ueki Corp","market":"JP","kind":"security","weight":0.0011,"since":"2026-10-14"},{"ticker":"2415 JP","name":"Human Holdings Co Ltd","market":"JP","kind":"security","weight":0.0011,"since":"2026-10-14"},{"ticker":"3723 JP","name":"Nihon Falcom Corp","market":"JP","kind":"security","weight":0.001,"since":"2026-10-14"},{"ticker":"9823 JP","name":"Mammy Mart Holdings Corp","market":"JP","kind":"security","weight":0.001,"since":"2026-10-14"},{"ticker":"1960 JP","name":"Sanyo Engineering & Construction Inc","market":"JP","kind":"security","weight":0.0009,"since":"2026-10-14"},{"ticker":"5071 JP","name":"VIS Co Ltd","market":"JP","kind":"security","weight":0.0009,"since":"2026-10-14"},{"ticker":"6272 JP","name":"Rheon Automatic Machinery Co Ltd","market":"JP","kind":"security","weight":0.0009,"since":"2026-10-14"},{"ticker":"MAJOR TB","name":"MAJOR CINEPLEX GRO THB1(LOCAL)","market":"TB","kind":"security","weight":0.0009,"since":"2026-10-14"},{"ticker":"6239 JP","name":"Nagaoka International Corp","market":"JP","kind":"security","weight":0.0008,"since":"2026-10-14"},{"ticker":"6333 JP","name":"Teikoku Corp","market":"JP","kind":"security","weight":0.0007000000000000001,"since":"2026-10-14"},{"ticker":"7235 JP","name":"Tokyo Radiator Manufacturing Co Ltd","market":"JP","kind":"security","weight":0.0007000000000000001,"since":"2026-10-14"},{"ticker":"8830 JP","name":"Sumitomo Realty & Development Co Ltd","market":"JP","kind":"security","weight":0.0007000000000000001,"since":"2026-10-14"},{"ticker":"9896 JP","name":"JK Holdings Co Ltd","market":"JP","kind":"security","weight":0.0007000000000000001,"since":"2026-10-14"},{"ticker":"7191 JP","name":"Entrust Inc","market":"JP","kind":"security","weight":0.0006,"since":"2026-10-14"},{"ticker":"9145 JP","name":"Being Holdings Co Ltd","market":"JP","kind":"security","weight":0.0006,"since":"2026-10-14"},{"ticker":"9799 JP","name":"Asahi Intelligence Service Co Ltd","market":"JP","kind":"security","weight":0.0006,"since":"2026-10-14"},{"ticker":"4231 JP","name":"Tigers Polymer Corp","market":"JP","kind":"security","weight":0.0004,"since":"2026-10-14"},{"ticker":"9709 JP","name":"NCS&A Co Ltd","market":"JP","kind":"security","weight":0.0003,"since":"2026-10-14"},{"ticker":"5888 JP","name":"DAIWA CYCLE Co Ltd","market":"JP","kind":"security","weight":0.0002,"since":"2026-10-14"},{"ticker":"EEM   261120P00062000","name":"EEM US 11/20/26 P62","market":"US","kind":"option","weight":0.0,"since":"2026-10-14"}]};
+  if (!D || !D.days || !D.days.length) { document.querySelector(".wrap").insertAdjacentHTML("beforeend", '<div class="empty">No ORR snapshots stored yet.</div>'); return; }
+  const $ = id => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const pc = (x, d = 1) => x == null ? "–" : (100 * x).toFixed(d).replace("-", "−") + "%";
+  const spc = (x, d = 2) => x == null ? "–" : (x > 0 ? "+" : x < 0 ? "−" : "") + Math.abs(100 * x).toFixed(d) + "%";
+  const usd = x => { const a = Math.abs(x), s = x < 0 ? "−" : "+"; return a >= 1e6 ? s + "$" + (a / 1e6).toFixed(2) + "M" : s + "$" + Math.round(a / 1e3) + "k"; };
+  const sh = x => (x > 0 ? "+" : "−") + Math.abs(Math.round(x)).toLocaleString("en-US");
+  const dt = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+  const dty = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); };
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  function svgEl(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  const tip = $("tip");
+  function showTip(ev, html) { tip.innerHTML = html; tip.hidden = false; const w = tip.offsetWidth, h = tip.offsetHeight; let x = ev.clientX + 14, y = ev.clientY + 14; if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (y + h > innerHeight - 8) y = ev.clientY - h - 14; tip.style.left = x + "px"; tip.style.top = y + "px"; }
+  const hideTip = () => { tip.hidden = true; };
+
+  const days = D.days, steps = D.steps, last = days[days.length - 1], prev = days.length > 1 ? days[days.length - 2] : null;
+
+  // ---------- header and stats ----------
+  $("asof").innerHTML = `Book dated <b>${dty(last.date)}</b><br>Collected since ${dty(D.first)} · <a href="${esc(D.source)}" rel="noopener">fund page</a>`;
+  const gross = d => d.long - d.short, net = d => d.long + d.short;
+  const dlt = (f, d = 1) => prev ? `${spc(f(last) - f(prev), d).replace("%", "pp")} vs ${dt(prev.date)}` : "first snapshot";
+  const stats = [
+    ["Long", pc(last.long), dlt(d => d.long), "var(--long)"],
+    ["Short", pc(last.short), dlt(d => d.short), "var(--short)"],
+    ["Net", pc(net(last)), dlt(net), "var(--net)"],
+    ["Gross", pc(gross(last)), dlt(gross), null],
+    ["Positions", `${last.n_long} / ${last.n_short}`, "long / short", null],
+    ["NAV", last.nav != null ? "$" + last.nav.toFixed(2) : "–", last.premium != null ? `premium ${spc(last.premium, 2)} · $${(last.net_assets / 1e6).toFixed(0)}M` : "", null],
+  ];
+  $("stats").innerHTML = stats.map(([l, v, d, k]) => `<div class="stat"><div class="label">${k ? `<i class="key" style="background:${k}"></i>` : ""}${l}</div><div class="value">${v}</div><div class="delta">${d}</div></div>`).join("");
+
+  // ---------- trades chart ----------
+  let sel = steps.length - 1;
+  function drawTradeChart() {
+    const host = $("tr-chart"); host.innerHTML = "";
+    if (!steps.length) { host.innerHTML = `<div class="empty">Trades appear from the second snapshot on. One book so far, dated ${dty(last.date)}.</div>`; return; }
+    const W = Math.max(300, host.clientWidth), H = 190, m = { l: 46, r: 8, t: 10, b: 24 };
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Shares bought and sold per day, % of NAV" }, host);
+    const pos = s => s.trades.filter(t => t.usd > 0), neg = s => s.trades.filter(t => t.usd < 0);
+    const sum = (a, side) => a.filter(t => t.side === side).reduce((x, t) => x + t.pct, 0);
+    const vals = steps.map(s => ({ bl: sum(pos(s), "long"), bs: sum(pos(s), "short"), sl: sum(neg(s), "long"), ss: sum(neg(s), "short") }));
+    let hi = Math.max(0.005, ...vals.map(v => v.bl + v.bs)), lo = Math.min(-0.005, ...vals.map(v => v.sl + v.ss));
+    const pad = (hi - lo) * 0.08; hi += pad; lo -= pad;
+    const y = v => m.t + (hi - v) / (hi - lo) * (H - m.t - m.b);
+    const step = Math.max(0.0025, niceStep((hi - lo) / 4));
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-12; v += step) {
+      svgEl("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: Math.abs(v) < 1e-12 ? "zero" : "gridline" }, svg);
+      svgEl("text", { x: m.l - 6, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(100 * v).toFixed(step < 0.01 ? 2 : 1) + "%";
+    }
+    const n = steps.length, band = (W - m.l - m.r) / n, bw = Math.min(28, Math.max(4, band * 0.6));
+    const every = Math.ceil(n / Math.floor((W - m.l - m.r) / 64));
+    steps.forEach((s, i) => {
+      const cx = m.l + band * (i + 0.5), v = vals[i];
+      const hit = svgEl("rect", { x: cx - band / 2, y: m.t, width: band, height: H - m.t - m.b, class: "hit" + (i === sel ? " sel" : ""), tabindex: 0 }, svg);
+      const seg = (a, b, col) => { if (Math.abs(b - a) < 1e-9) return; const top = Math.min(y(a), y(b)), h = Math.max(1, Math.abs(y(a) - y(b)) - 2); svgEl("rect", { x: cx - bw / 2, y: (b > a ? top : top + 2), width: bw, height: h, rx: 2, fill: col, "pointer-events": "none" }, svg); };
+      seg(0, v.bl, css("--long")); seg(v.bl, v.bl + v.bs, css("--short"));
+      seg(0, v.sl, css("--long")); seg(v.sl, v.sl + v.ss, css("--short"));
+      if (i % every === 0 || i === n - 1) svgEl("text", { x: cx, y: H - 6, "text-anchor": "middle" }, svg).textContent = dt(s.to);
+      const tipHtml = () => `<div class="t">${dt(s.from)} → ${dt(s.to)}</div>
+        <div class="rw"><span class="k"><i style="background:var(--long)"></i>Long book bought</span><b>${spc(v.bl)}</b></div>
+        <div class="rw"><span class="k"><i style="background:var(--short)"></i>Short book bought</span><b>${spc(v.bs)}</b></div>
+        <div class="rw"><span class="k"><i style="background:var(--long)"></i>Long book sold</span><b>${spc(v.sl)}</b></div>
+        <div class="rw"><span class="k"><i style="background:var(--short)"></i>Short book sold</span><b>${spc(v.ss)}</b></div>
+        <div class="rw"><span class="k">Trades</span><b>${s.trades.length}</b></div>`;
+      hit.addEventListener("mousemove", ev => showTip(ev, tipHtml()));
+      hit.addEventListener("mouseleave", hideTip);
+      const pick = () => { sel = i; drawTradeChart(); drawTrades(); };
+      hit.addEventListener("click", pick);
+      hit.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); } });
+    });
+  }
+  function niceStep(x) { const p = Math.pow(10, Math.floor(Math.log10(x))), f = x / p; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p; }
+
+  const CHIP = { open: "open", short: "open", close: "close", "close short": "close", flip: "flip", add: "size", trim: "size", "add short": "size", cover: "size" };
+  const LABEL = { open: "open", short: "short", close: "close", "close short": "close short", flip: "flip", add: "add", trim: "trim", "add short": "add short", cover: "cover" };
+  function drawTrades() {
+    const t = $("tr-table"), note = $("tr-note");
+    if (!steps.length) { $("tr-sub").textContent = ""; t.innerHTML = ""; note.textContent = ""; return; }
+    const s = steps[sel];
+    const flow = Math.abs(s.flow - 1) > 1e-9 ? ` · a ${spc(s.flow - 1, 2)} ${s.flow > 1 ? "creation" : "redemption"} scaled every position` : "";
+    $("tr-sub").innerHTML = `<b style="color:var(--ink-2)">${dt(s.from)} → ${dt(s.to)}</b>: ${s.trades.length} trade${s.trades.length === 1 ? "" : "s"}, bought ${pc(s.bought, 2)} and sold ${pc(s.sold, 2)} of NAV${flow}`;
+    if (!s.trades.length) { t.innerHTML = ""; note.innerHTML = `<div class="empty">No share-count changes between these two snapshots. Weights moved only with prices.</div>`; return; }
+    note.textContent = "";
+    t.innerHTML = `<thead><tr><th>Action</th><th>Position</th><th>Market</th><th class="r">Shares</th><th class="r">Value</th><th class="r">% NAV</th><th class="r">Weight after</th></tr></thead><tbody>` +
+      s.trades.map(x => `<tr><td><span class="chip ${CHIP[x.action]}">${LABEL[x.action]}</span></td>
+        <td class="m"><i class="side" style="background:var(--${x.side})" title="${x.side} book"></i>${esc(x.ticker)}<span class="n">${esc(x.name)}</span></td>
+        <td class="m">${esc(x.market)}</td><td class="r m">${sh(x.shares)}</td><td class="r m">${usd(x.usd)}</td>
+        <td class="r m">${spc(x.pct)}</td><td class="r m">${spc(x.after)}</td></tr>`).join("") + "</tbody>";
+  }
+
+  // ---------- exposure ----------
+  function drawExposure() {
+    const host = $("exp-chart"); host.innerHTML = "";
+    const W = Math.max(300, host.clientWidth), H = 220, m = { l: 46, r: 56, t: 10, b: 24 };
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Long, short and net exposure over time" }, host);
+    const series = [["long", "Long", d => d.long], ["short", "Short", d => d.short], ["net", "Net", net]];
+    let hi = Math.max(...days.map(d => d.long)), lo = Math.min(...days.map(d => d.short));
+    const pad = (hi - lo) * 0.06; hi += pad; lo -= pad;
+    const n = days.length;
+    const x = i => n === 1 ? (m.l + W - m.r) / 2 : m.l + i * (W - m.l - m.r) / (n - 1);
+    const y = v => m.t + (hi - v) / (hi - lo) * (H - m.t - m.b);
+    const step = niceStep((hi - lo) / 5);
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-12; v += step) {
+      svgEl("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: Math.abs(v) < 1e-12 ? "zero" : "gridline" }, svg);
+      svgEl("text", { x: m.l - 6, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = String(Math.round(100 * v)).replace("-", "−") + "%";
+    }
+    const every = Math.max(1, Math.ceil(n / Math.floor((W - m.l - m.r) / 70)));
+    days.forEach((d, i) => { if (i % every === 0 || i === n - 1) svgEl("text", { x: x(i), y: H - 6, "text-anchor": n === 1 ? "middle" : (i === 0 ? "start" : i === n - 1 ? "end" : "middle") }, svg).textContent = dt(d.date); });
+    for (const [k, , f] of series) {
+      const col = css("--" + k);
+      if (n > 1) svgEl("path", { d: days.map((d, i) => (i ? "L" : "M") + x(i).toFixed(1) + "," + y(f(d)).toFixed(1)).join(""), fill: "none", stroke: col, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+      svgEl("circle", { cx: x(n - 1), cy: y(f(last)), r: 4, fill: col, stroke: css("--surface"), "stroke-width": 2 }, svg);
+      svgEl("text", { x: x(n - 1) + 8, y: y(f(last)) + 4, class: "lbl" }, svg).textContent = String(Math.round(100 * f(last))).replace("-", "−") + "%";
+    }
+    const cross = svgEl("line", { y1: m.t, y2: H - m.b, stroke: css("--axis"), "stroke-width": 1, visibility: "hidden" }, svg);
+    const hit = svgEl("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+    hit.addEventListener("mousemove", ev => {
+      const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+      const i = n === 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round((px - m.l) / ((W - m.l - m.r) / (n - 1)))));
+      const d = days[i]; cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+      showTip(ev, `<div class="t">${dty(d.date)}</div>` + series.map(([k, l, f]) => `<div class="rw"><span class="k"><i style="background:var(--${k})"></i>${l}</span><b>${pc(f(d))}</b></div>`).join("") +
+        `<div class="rw"><span class="k">Gross</span><b>${pc(gross(d))}</b></div><div class="rw"><span class="k">Cash</span><b>${pc(d.cash)}</b></div>`);
+    });
+    hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+    $("exp-note").innerHTML = n < 10 ? `<b>${n} snapshot${n === 1 ? "" : "s"} so far.</b> The site keeps no history, so this line starts on ${dty(D.first)} and grows one point a trading day.` :
+      `Exposure moves with prices as well as trades: a rally in the longs raises the long line with no trading at all. The trades panel above separates the two.`;
+  }
+
+  // ---------- book ----------
+  let side = "long", showAll = false;
+  function drawBook() {
+    const rows = D.book.filter(b => side === "long" ? b.weight > 0 : b.weight < 0);
+    const shown = showAll ? rows : rows.slice(0, 15);
+    $("book-sub").textContent = `${rows.length} ${side} positions, ${pc(rows.reduce((a, b) => a + b.weight, 0))} of NAV, largest first`;
+    $("book-table").innerHTML = `<thead><tr><th>Position</th><th>Market</th><th class="r">% NAV</th><th class="r">In book since</th></tr></thead><tbody>` +
+      shown.map(b => `<tr><td class="m">${esc(b.ticker)}<span class="n">${esc(b.name)}</span></td><td class="m">${esc(b.market)}</td>
+        <td class="r m">${spc(b.weight)}</td><td class="r m">${b.since === D.first ? "≤ " + dt(b.since) : dt(b.since)}</td></tr>`).join("") + "</tbody>";
+    const btn = $("toggle-book"); btn.hidden = rows.length <= 15; btn.textContent = showAll ? "Show top 15" : `Show all ${rows.length}`;
+  }
+  $("book-side").addEventListener("click", ev => { const b = ev.target.closest("button"); if (!b) return; side = b.dataset.s; showAll = false;
+    for (const x of $("book-side").children) x.setAttribute("aria-pressed", String(x === b)); drawBook(); });
+  $("toggle-book").addEventListener("click", () => { showAll = !showAll; drawBook(); });
+  $("toggle-guide").addEventListener("click", ev => { const g = $("guide"); g.hidden = !g.hidden; ev.currentTarget.setAttribute("aria-pressed", String(!g.hidden)); });
+
+  $("foot").innerHTML = `Source: the fund's own published holdings, <a href="${esc(D.source)}" rel="noopener">militiaetf.com</a>, one snapshot per trading day. "In book since ≤" means the position was already held when collection began. Built ${esc(D.generated_at.replace("T", " "))}. Not investment advice.`;
+
+  function drawAll() { drawTradeChart(); drawExposure(); }
+  drawAll(); drawTrades(); drawBook();
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
+})();
+</script>
+<script>window.goatcounter={path:"/orr"};</script>
+<script data-goatcounter="https://stats.bluemagicai.com/count" async src="https://stats.bluemagicai.com/count.js"></script>
+</body></html>
